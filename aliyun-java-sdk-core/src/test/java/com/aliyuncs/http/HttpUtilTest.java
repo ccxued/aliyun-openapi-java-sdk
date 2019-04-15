@@ -1,6 +1,11 @@
 package com.aliyuncs.http;
 
-import com.aliyuncs.exceptions.ClientException;
+import static org.mockito.Mockito.mock;
+
+import java.net.Proxy;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.apache.http.HttpHost;
 import org.junit.Assert;
 import org.junit.Rule;
@@ -8,11 +13,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.mockito.Mockito;
 
-import java.net.Proxy;
-import java.util.HashMap;
-import java.util.Map;
-
-import static org.mockito.Mockito.mock;
+import com.aliyuncs.exceptions.ClientException;
 
 public class HttpUtilTest {
 
@@ -52,14 +53,16 @@ public class HttpUtilTest {
         requestHeaders.put("test1", "test1");
         requestHeaders.put("test2", "test2");
         Mockito.when(request.getSysHeaders()).thenReturn(requestHeaders);
-        String exceptString = "> GET HTTP/1.1\n> test2 : test2\n> test1 : test1\n> \nrequest body";
+        String exceptString = "> GET HTTP/1.1\n> test2 : test2\n> test1 : test1\n> Host : test.domain\n> " +
+                "Request URL : http://test.domain\n> \nrequest body";
 
         HttpUtil.setIsHttpDebug(true);
         HttpUtil.setIsHttpContentDebug(true);
         Assert.assertEquals(HttpUtil.debugHttpRequest(request), exceptString);
 
         HttpUtil.setIsHttpContentDebug(false);
-        exceptString = "> GET HTTP/1.1\n> test2 : test2\n> test1 : test1\n> ";
+        exceptString = "> GET HTTP/1.1\n> test2 : test2\n> test1 : test1\n> Host : test.domain\n> " +
+                "Request URL : http://test.domain\n> ";
         Assert.assertEquals(HttpUtil.debugHttpRequest(request), exceptString);
 
         HttpUtil.setIsHttpDebug(false);

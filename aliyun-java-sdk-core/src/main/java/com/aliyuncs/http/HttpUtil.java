@@ -1,12 +1,5 @@
 package com.aliyuncs.http;
 
-import com.aliyuncs.exceptions.ClientException;
-import com.aliyuncs.utils.StringUtils;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.apache.http.HttpHost;
-
-import javax.xml.bind.DatatypeConverter;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
@@ -14,6 +7,15 @@ import java.net.SocketAddress;
 import java.net.URL;
 import java.util.Map;
 import java.util.Map.Entry;
+
+import javax.xml.bind.DatatypeConverter;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.http.HttpHost;
+
+import com.aliyuncs.exceptions.ClientException;
+import com.aliyuncs.utils.StringUtils;
 
 public class HttpUtil {
 
@@ -45,16 +47,29 @@ public class HttpUtil {
         HttpUtil.isHttpContentDebug = isHttpContentDebug;
     }
 
-    public static String debugHttpRequest(HttpRequest request) throws ClientException {
+    public static String debugHttpRequest(HttpRequest request) {
         if (isHttpDebug) {
-            String protocol = request.getSysUrl().split("://")[0].toUpperCase() + "/1.1";
-            StringBuilder debugString = new StringBuilder("> " + request.getSysMethod() + " " + protocol + "\n> ");
-            Map<String, String> requestHeaders = request.getSysHeaders();
-            for (Entry<String, String> entry : requestHeaders.entrySet()) {
-                debugString.append(entry.getKey() + " : " + entry.getValue() + "\n> ");
-            }
-            if (isHttpContentDebug) {
-                debugString.append("\n" + request.getHttpContentString());
+            StringBuilder debugString = new StringBuilder();
+            try {
+                String sysUrl = request.getSysUrl();
+                String protocol = sysUrl.split("://")[0].toUpperCase() + "/1.1";
+                debugString.append("> " + request.getSysMethod() + " " + protocol + "\n> ");
+                Map<String, String> requestHeaders = request.getSysHeaders();
+                for (Entry<String, String> entry : requestHeaders.entrySet()) {
+                    debugString.append(entry.getKey() + " : " + entry.getValue() + "\n> ");
+                }
+                if (sysUrl.contains("?")) {
+                    debugString.append("Host : " + sysUrl.substring(sysUrl.indexOf("://") + 3, sysUrl.indexOf("?"))
+                            + "\n> ");
+                } else {
+                    debugString.append("Host : " + sysUrl.substring(sysUrl.indexOf("://") + 3) + "\n> ");
+                }
+                debugString.append("Request URL : " + sysUrl + "\n> ");
+                if (isHttpContentDebug) {
+                    debugString.append("\n" + request.getHttpContentString());
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
             }
             log.info("\n" + debugString);
             return debugString.toString();
@@ -63,19 +78,25 @@ public class HttpUtil {
         }
     }
 
-    public static String debugHttpResponse(HttpResponse response) throws ClientException {
+    public static String debugHttpResponse(HttpResponse response) {
         if (isHttpDebug) {
-            String protocol = "HTTP/1.1";
-            StringBuilder debugString = new StringBuilder("< " + protocol + " " + response.getStatus() + "\n< ");
-            Map<String, String> responseHeaders = response.getSysHeaders();
-            for (Entry<String, String> entry : responseHeaders.entrySet()) {
-                debugString.append(entry.getKey() + " : " + entry.getValue() + "\n< ");
-            }
-            if (isHttpContentDebug) {
-                debugString.append("\n" + response.getHttpContentString());
+            StringBuilder debugString = new StringBuilder();
+            try {
+                String protocol = "HTTP/1.1";
+                debugString.append("< " + protocol + " " + response.getStatus() + "\n< ");
+                Map<String, String> responseHeaders = response.getSysHeaders();
+                for (Entry<String, String> entry : responseHeaders.entrySet()) {
+                    debugString.append(entry.getKey() + " : " + entry.getValue() + "\n< ");
+                }
+                if (isHttpContentDebug) {
+                    debugString.append("\n" + response.getHttpContentString());
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
             }
             log.info("\n" + debugString);
             return debugString.toString();
+
         } else {
             return null;
         }
@@ -110,7 +131,8 @@ public class HttpUtil {
         return proxy;
     }
 
-    public static HttpHost getApacheProxy(String clientProxy, String envProxy, HttpRequest request) throws ClientException {
+    public static HttpHost getApacheProxy(String clientProxy, String envProxy, HttpRequest request)
+            throws ClientException {
         try {
             String proxyStr = (!StringUtils.isEmpty(clientProxy) ? clientProxy : envProxy);
             if (StringUtils.isEmpty(proxyStr)) {
